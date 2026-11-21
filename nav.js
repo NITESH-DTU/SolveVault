@@ -83,11 +83,20 @@
 
   function update() {
     const slug = currentSlug();
-    if (!slug) { bar.style.display = "none"; return; }
+    if (!slug) {
+      bar.style.display = "none";
+      document.body.classList.remove("solvevault-on-question");
+      return;
+    }
     const { list, name } = getList();
-    if (!list.length) { bar.style.display = "none"; return; }
+    if (!list.length) {
+      bar.style.display = "none";
+      document.body.classList.remove("solvevault-on-question");
+      return;
+    }
     const index = list.indexOf(slug);
     label.textContent = `${name} · ${index === -1 ? "–" : index + 1}/${list.length}`;
+    document.body.classList.add("solvevault-on-question");
     bar.style.display = "flex";
   }
 
