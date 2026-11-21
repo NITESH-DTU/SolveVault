@@ -55,8 +55,11 @@ function render() {
 
   const side = $("topics");
   side.textContent = "";
+  side.appendChild(el("div", "side-label", "Browse topics"));
   const addTopic = (name, count) => {
     const b = el("button", "topic" + (name === topic ? " active" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(name === topic));
     b.append(el("span", "", name), el("span", "c", count));
     b.onclick = () => { topic = name; render(); };
     side.appendChild(b);
@@ -108,8 +111,12 @@ function render() {
 
 document.querySelectorAll(".chip").forEach(chip => {
   chip.onclick = () => {
-    document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+    document.querySelectorAll(".chip").forEach(c => {
+      c.classList.remove("active");
+      c.setAttribute("aria-pressed", "false");
+    });
     chip.classList.add("active");
+    chip.setAttribute("aria-pressed", "true");
     difficulty = chip.dataset.d;
     render();
   };
@@ -124,13 +131,18 @@ $("start").onclick = async () => {
   location.href = `https://leetcode.com/problems/${slugs[0]}/`;
 };
 
-chrome.storage.local.get(["solved", "updatedAt"], data => {
-  if (!data.solved) {
-    $("list").appendChild(el("div", "empty", 'No data yet. Open leetcode.com and click the "My solved" button.'));
-    return;
-  }
-  solved = data.solved;
-  $("meta").textContent = `Updated ${new Date(data.updatedAt).toLocaleString()}`;
-  renderStats();
-  render();
-});
+if (typeof chrome === "undefined" || !chrome.storage?.local) {
+  $("meta").textContent = "Your private LeetCode practice library";
+  $("list").appendChild(el("div", "empty", 'Open this dashboard from the SolveVault extension after syncing your solved problems.'));
+} else {
+  chrome.storage.local.get(["solved", "updatedAt"], data => {
+    if (!data.solved) {
+      $("list").appendChild(el("div", "empty", 'No data yet. Open leetcode.com and click the "My solved" button.'));
+      return;
+    }
+    solved = data.solved;
+    $("meta").textContent = `Updated ${new Date(data.updatedAt).toLocaleString()}`;
+    renderStats();
+    render();
+  });
+}
