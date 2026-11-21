@@ -75,24 +75,53 @@ async function getSolved(onProgress) {
   return hasAC ? all.filter(q => q.status === "AC") : all;
 }
 
+const buttonStyle = document.createElement("style");
+buttonStyle.textContent = `
+  #solvevault-sync {
+    position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border: 1px solid #167a62;
+    border-radius: 12px; background: #167a62; color: #fff;
+    box-shadow: 0 4px 12px rgba(22, 122, 98, .2);
+    font: 650 13px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+  }
+  #solvevault-sync:hover { background: #116851; box-shadow: 0 6px 16px rgba(22, 122, 98, .24); transform: translateY(-1px); }
+  #solvevault-sync:focus-visible { outline: 3px solid rgba(22, 122, 98, .32); outline-offset: 3px; }
+  #solvevault-sync:disabled { cursor: progress; opacity: .78; transform: none; }
+  body.solvevault-on-question #solvevault-sync { bottom: 76px; }
+  @media (max-width: 560px) {
+    #solvevault-sync { bottom: 14px; right: 14px; min-height: 42px; }
+    body.solvevault-on-question #solvevault-sync { bottom: 68px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #solvevault-sync { transition: none; } }
+`;
+document.documentElement.appendChild(buttonStyle);
+
 const btn = document.createElement("button");
-btn.textContent = "My solved";
-btn.style.cssText =
-  "position:fixed;bottom:20px;right:20px;z-index:99999;padding:10px 14px;" +
-  "background:#ffa116;color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:600;";
+btn.id = "solvevault-sync";
+btn.type = "button";
+btn.textContent = "My Solved";
+btn.setAttribute("aria-label", "Sync solved problems to SolveVault");
+btn.setAttribute("aria-live", "polite");
 
 btn.onclick = async () => {
-  btn.textContent = "Fetching...";
+  btn.disabled = true;
+  btn.setAttribute("aria-busy", "true");
+  btn.textContent = "Syncing…";
   try {
     const solved = await getSolved((done, total) => {
-      btn.textContent = `Fetching ${done}/${total}`;
+      btn.textContent = `Syncing ${done}/${total}`;
     });
     await chrome.storage.local.set({ solved, updatedAt: Date.now() });
-    btn.textContent = `Done (${solved.length} solved)`;
+    btn.textContent = `Synced · ${solved.length} solved`;
+    btn.removeAttribute("aria-busy");
     chrome.runtime.sendMessage({ type: "openDashboard" });
   } catch (e) {
     console.error(e);
-    btn.textContent = "Failed: " + e.message.slice(0, 40);
+    btn.textContent = "Sync failed — retry";
+    btn.removeAttribute("aria-busy");
+    btn.disabled = false;
   }
 };
 
